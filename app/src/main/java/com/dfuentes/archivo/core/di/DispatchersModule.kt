@@ -22,5 +22,8 @@ import javax.inject.Qualifier
 object DispatchersModule {
     @Provides @IoDispatcher fun io(): CoroutineDispatcher = Dispatchers.IO
 
-    @Provides @DefaultDispatcher fun default(): CoroutineDispatcher = Dispatchers.Default
+    // El nombre del método no afecta al binding (Hilt liga por tipo + qualifier).
+    // Se evita `default` porque es palabra reservada de Java y rompe el código
+    // que genera Dagger vía KSP.
+    @Provides @DefaultDispatcher fun defaultDispatcher(): CoroutineDispatcher = Dispatchers.Default
 }

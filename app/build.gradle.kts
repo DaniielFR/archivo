@@ -1,6 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    // kotlin.android ya no se aplica: AGP 9 trae Kotlin integrado (built-in Kotlin).
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
@@ -9,7 +9,9 @@ plugins {
 
 android {
     namespace = "com.dfuentes.archivo"
-    compileSdk = 36
+    // compileSdk 37: las librerías del Compose BOM 2026.08.00 (compose-ui 1.12,
+    // lifecycle 2.11) exigen compilar contra API 37+. targetSdk/minSdk sin tocar.
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.dfuentes.archivo"

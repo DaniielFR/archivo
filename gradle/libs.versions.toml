@@ -8,14 +8,14 @@
 [versions]
 agp                = "9.3.0"
 kotlin             = "2.3.20"
-ksp                = "2.3.20-2.0.0"      # debe casar con `kotlin` (mismo prefijo)
+ksp                = "2.3.11"            # KSP nuevo esquema: versión propia, construida contra Kotlin 2.3.20
 coreKtx            = "1.17.0"
 lifecycle          = "2.9.4"
 activityCompose    = "1.11.0"
 composeBom         = "2026.08.00"
 material3Adaptive  = "1.2.0"
 room               = "2.8.4"             # NO uses androidx.room3 (3.0.x está en alpha)
-hilt               = "2.57"
+hilt               = "2.60.1"
 androidxHilt       = "1.4.0"
 datastore          = "1.2.0"
 splashscreen       = "1.2.0"
