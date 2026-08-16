@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Evita el destello blanco al abrir la app en modo oscuro. -->
+    <style name="Theme.Archivo.Main" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@android:color/system_neutral1_900</item>
+    </style>
+</resources>

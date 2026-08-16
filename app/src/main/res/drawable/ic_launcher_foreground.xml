@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Marcador de libro sobre lomo. Provisional: sustitúyelo cuando quieras. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group android:translateX="30" android:translateY="30">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M8,4h32a4,4 0 0 1 4,4v42a2,2 0 0 1 -3.1,1.7L24,42.5 7.1,51.7A2,2 0 0 1 4,50V8a4,4 0 0 1 4,-4z" />
+    </group>
+</vector>

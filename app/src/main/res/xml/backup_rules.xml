@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copia de Android (segundo cinturón, gratuito). El backup propio de la fase 2
+  sigue siendo el mecanismo principal: este solo cubre el caso de cambio de móvil.
+-->
+<full-backup-content>
+    <include domain="database" path="." />
+    <include domain="file" path="covers/" />
+    <exclude domain="database" path="archivo.db-wal" />
+    <exclude domain="database" path="archivo.db-shm" />
+</full-backup-content>
