@@ -4,8 +4,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.dfuentes.archivo.core.designsystem.theme.ArchivoTheme
+import com.dfuentes.archivo.feature.settings.SettingsViewModel
 import com.dfuentes.archivo.navigation.ArchivoApp
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -20,7 +24,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            ArchivoTheme {
+            val settingsViewModel: SettingsViewModel = hiltViewModel()
+            val prefs by settingsViewModel.preferences.collectAsStateWithLifecycle()
+
+            ArchivoTheme(
+                themeMode = prefs.themeMode,
+                dynamicColor = prefs.dynamicColor,
+            ) {
                 ArchivoApp()
             }
         }

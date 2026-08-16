@@ -6,13 +6,13 @@ copias de seguridad que exportas tú.
 
 ## Estado
 
-**Fase 0 — cimientos.** Ver `GUIA-FASE-0.md` para arrancar y
+**Fase 1 — MVP local.** Ver `GUIA-FASE-0.md` para arrancar y
 `informe-tecnico.md` para el diseño completo y el plan por fases.
 
 | Fase | Contenido | Estado |
 |---|---|---|
 | 0 | Proyecto, tema, Room, navegación, CI | ✅ |
-| 1 | MVP: alta manual, biblioteca, ficha de detalle | ⬜ |
+| 1 | MVP: alta manual, biblioteca, ficha de detalle | ✅ |
 | 2 | Exportación/importación y copia automática | ⬜ |
 | 3 | Metadatos de libros (Google Books + Open Library) | ⬜ |
 | 4 | Cine y series (TMDB) | ⬜ |

@@ -11,18 +11,32 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,13 +44,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dfuentes.archivo.core.designsystem.component.EmptyState
 import com.dfuentes.archivo.core.designsystem.component.MediaTypeChip
 import com.dfuentes.archivo.core.designsystem.component.RatingStars
 import com.dfuentes.archivo.core.designsystem.theme.ArchivoTheme
 import com.dfuentes.archivo.core.model.MediaType
+import com.dfuentes.archivo.core.model.SortOrder
 import com.dfuentes.archivo.core.model.Status
 import com.dfuentes.archivo.data.repository.WorkSummary
 
@@ -44,15 +59,22 @@ import com.dfuentes.archivo.data.repository.WorkSummary
  * Composable de RUTA: conoce el ViewModel, no dibuja nada.
  * Composable de CONTENIDO ([LibraryScreen]): dibuja todo, no conoce el ViewModel.
  *
- * Esa separación es la que permite previsualizar cada estado en el panel de
- * Android Studio y, en la fase 6, capturarlos automáticamente como tests visuales.
+ * Esa separación permite previsualizar cada estado en el panel de Android Studio
+ * y, en la fase 6, capturarlos automáticamente como tests visuales.
  */
 @Composable
 fun LibraryRoute(
+    onOpenWork: (Long) -> Unit,
+    onAddWork: (MediaType) -> Unit,
     viewModel: LibraryViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    LibraryScreen(state = state, onAction = viewModel::onAction)
+    LibraryScreen(
+        state = state,
+        onAction = viewModel::onAction,
+        onOpenWork = onOpenWork,
+        onAddWork = onAddWork,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,14 +82,45 @@ fun LibraryRoute(
 fun LibraryScreen(
     state: LibraryUiState,
     onAction: (LibraryAction) -> Unit,
+    onOpenWork: (Long) -> Unit,
+    onAddWork: (MediaType) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var showAddSheet by remember { mutableStateOf(false) }
+    var showSortMenu by remember { mutableStateOf(false) }
+
     Scaffold(
         modifier = modifier,
         topBar = {
             TopAppBar(
                 title = { Text("Biblioteca") },
+                actions = {
+                    Box {
+                        IconButton(onClick = { showSortMenu = true }) {
+                            Icon(Icons.Filled.Sort, contentDescription = "Ordenar")
+                        }
+                        DropdownMenu(
+                            expanded = showSortMenu,
+                            onDismissRequest = { showSortMenu = false },
+                        ) {
+                            SortOrder.entries.forEach { sort ->
+                                DropdownMenuItem(
+                                    text = { Text(sort.displayName) },
+                                    onClick = {
+                                        onAction(LibraryAction.SortChanged(sort))
+                                        showSortMenu = false
+                                    },
+                                )
+                            }
+                        }
+                    }
+                },
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showAddSheet = true }) {
+                Icon(Icons.Filled.Add, contentDescription = "Añadir")
+            }
         },
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
@@ -90,13 +143,29 @@ fun LibraryScreen(
                 state.isEmpty -> EmptyState(
                     icon = Icons.AutoMirrored.Outlined.MenuBook,
                     title = "Tu archivo está vacío",
-                    description = "Aquí irá quedando todo lo que leas y veas. " +
-                        "El alta de verdad llega en la fase 1.",
-                    actionLabel = "Añadir datos de ejemplo",
-                    onAction = { onAction(LibraryAction.SampleDataRequested) },
+                    description = "Aquí irá quedando todo lo que leas y veas.",
+                    actionLabel = "Añadir el primero",
+                    onAction = { showAddSheet = true },
                 )
 
-                else -> WorkGrid(items = state.items)
+                else -> WorkGrid(items = state.items, onOpenWork = onOpenWork)
+            }
+        }
+    }
+
+    if (showAddSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showAddSheet = false },
+            sheetState = rememberModalBottomSheetState(),
+        ) {
+            MediaType.entries.forEach { type ->
+                ListItem(
+                    headlineContent = { Text(type.singular) },
+                    modifier = Modifier.clickable {
+                        showAddSheet = false
+                        onAddWork(type)
+                    },
+                )
             }
         }
     }
@@ -128,6 +197,7 @@ private fun TypeFilterRow(
 @Composable
 private fun WorkGrid(
     items: List<WorkSummary>,
+    onOpenWork: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyVerticalGrid(
@@ -138,7 +208,7 @@ private fun WorkGrid(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         items(items = items, key = { it.id }) { item ->
-            WorkCardItem(item = item, onClick = { /* fase 1: navegar a la ficha */ })
+            WorkCardItem(item = item, onClick = { onOpenWork(item.id) })
         }
     }
 }
@@ -165,7 +235,6 @@ private fun WorkCardItem(
                 ),
             contentAlignment = Alignment.Center,
         ) {
-            // Fase 3: aquí va Coil leyendo item.coverPath.
             Text(
                 text = item.title.take(1).uppercase(),
                 style = MaterialTheme.typography.displaySmall,
@@ -200,7 +269,10 @@ private fun WorkCardItem(
 @Composable
 private fun LibraryEmptyPreview() {
     ArchivoTheme {
-        LibraryScreen(state = LibraryUiState(isLoading = false), onAction = {})
+        LibraryScreen(
+            state = LibraryUiState(isLoading = false),
+            onAction = {}, onOpenWork = {}, onAddWork = {},
+        )
     }
 }
 
@@ -220,7 +292,7 @@ private fun LibraryContentPreview() {
                         "Craig Mazin", Status.FINISHED, 10, null),
                 ),
             ),
-            onAction = {},
+            onAction = {}, onOpenWork = {}, onAddWork = {},
         )
     }
 }
