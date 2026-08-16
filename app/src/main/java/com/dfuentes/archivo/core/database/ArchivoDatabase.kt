@@ -3,6 +3,7 @@ package com.dfuentes.archivo.core.database
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.dfuentes.archivo.core.database.dao.BackupDao
 import com.dfuentes.archivo.core.database.dao.EntryDao
 import com.dfuentes.archivo.core.database.dao.LibraryDao
 import com.dfuentes.archivo.core.database.dao.WorkDao
@@ -48,6 +49,8 @@ abstract class ArchivoDatabase : RoomDatabase() {
     abstract fun libraryDao(): LibraryDao
     abstract fun workDao(): WorkDao
     abstract fun entryDao(): EntryDao
+
+    abstract fun backupDao(): BackupDao
 
     companion object {
         const val NAME = "archivo.db"

@@ -3,6 +3,7 @@ package com.dfuentes.archivo.core.database.di
 import android.content.Context
 import androidx.room.Room
 import com.dfuentes.archivo.core.database.ArchivoDatabase
+import com.dfuentes.archivo.core.database.dao.BackupDao
 import com.dfuentes.archivo.core.database.dao.EntryDao
 import com.dfuentes.archivo.core.database.dao.LibraryDao
 import com.dfuentes.archivo.core.database.dao.WorkDao
@@ -30,4 +31,6 @@ object DatabaseModule {
     @Provides fun provideWorkDao(db: ArchivoDatabase): WorkDao = db.workDao()
 
     @Provides fun provideEntryDao(db: ArchivoDatabase): EntryDao = db.entryDao()
+
+    @Provides fun provideBackupDao(db: ArchivoDatabase): BackupDao = db.backupDao()
 }

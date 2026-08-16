@@ -32,7 +32,7 @@ class LibraryRepositoryImpl @Inject constructor(
     private val libraryDao: LibraryDao,
     private val workDao: WorkDao,
     private val entryDao: EntryDao,
-    @IoDispatcher private val io: CoroutineDispatcher,
+    @param:IoDispatcher private val io: CoroutineDispatcher,
 ) : LibraryRepository {
 
     override fun library(filter: LibraryFilter): Flow<List<WorkSummary>> =
@@ -156,10 +156,13 @@ class LibraryRepositoryImpl @Inject constructor(
         }
         work.creators.filter { it.isNotBlank() }.forEachIndexed { index, name ->
             val clean = name.trim()
+            // insertPerson usa OnConflictStrategy.IGNORE y devuelve -1 si la
+            // persona ya existía: en ese caso hay que releerla para obtener su id.
             val personId = workDao.findPerson(clean)?.id
                 ?: workDao.insertPerson(PersonEntity(name = clean, sortName = sortTitleOf(clean)))
                     .takeIf { it > 0 }
-                ?: workDao.findPerson(clean)!!.id
+                ?: workDao.findPerson(clean)?.id
+                ?: return@forEachIndexed
             workDao.linkPerson(WorkPersonCrossRef(workId, personId, role, index))
         }
     }

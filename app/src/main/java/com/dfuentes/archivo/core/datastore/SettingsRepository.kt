@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.dfuentes.archivo.core.designsystem.theme.ThemeMode
@@ -24,17 +25,24 @@ data class UserPreferences(
     val dynamicColor: Boolean = true,
     val layout: LibraryLayout = LibraryLayout.GRID,
     val sort: SortOrder = SortOrder.RECENT,
+    val autoBackupEnabled: Boolean = false,
+    /** URI de árbol SAF con permiso persistido. Null = sin carpeta elegida. */
+    val backupFolderUri: String? = null,
+    val lastBackupAt: Long? = null,
 )
 
 @Singleton
 class SettingsRepository @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) {
     private object Keys {
         val THEME = stringPreferencesKey("theme_mode")
         val DYNAMIC = booleanPreferencesKey("dynamic_color")
         val LAYOUT = stringPreferencesKey("library_layout")
         val SORT = stringPreferencesKey("library_sort")
+        val AUTO_BACKUP = booleanPreferencesKey("auto_backup")
+        val BACKUP_FOLDER = stringPreferencesKey("backup_folder")
+        val LAST_BACKUP = longPreferencesKey("last_backup_at")
     }
 
     val preferences: Flow<UserPreferences> = context.dataStore.data.map { prefs ->
@@ -46,6 +54,9 @@ class SettingsRepository @Inject constructor(
             dynamicColor = prefs[Keys.DYNAMIC] ?: true,
             layout = prefs[Keys.LAYOUT].toEnum(LibraryLayout.GRID),
             sort = prefs[Keys.SORT].toEnum(SortOrder.RECENT),
+            autoBackupEnabled = prefs[Keys.AUTO_BACKUP] ?: false,
+            backupFolderUri = prefs[Keys.BACKUP_FOLDER],
+            lastBackupAt = prefs[Keys.LAST_BACKUP],
         )
     }
 
@@ -58,6 +69,20 @@ class SettingsRepository @Inject constructor(
     suspend fun setLayout(layout: LibraryLayout) = put(Keys.LAYOUT, layout.name)
 
     suspend fun setSort(sort: SortOrder) = put(Keys.SORT, sort.name)
+
+    suspend fun setAutoBackup(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.AUTO_BACKUP] = enabled }
+    }
+
+    suspend fun setBackupFolder(uri: String?) {
+        context.dataStore.edit { prefs ->
+            if (uri == null) prefs.remove(Keys.BACKUP_FOLDER) else prefs[Keys.BACKUP_FOLDER] = uri
+        }
+    }
+
+    suspend fun setLastBackupAt(millis: Long) {
+        context.dataStore.edit { it[Keys.LAST_BACKUP] = millis }
+    }
 
     private suspend fun put(key: Preferences.Key<String>, value: String) {
         context.dataStore.edit { it[key] = value }

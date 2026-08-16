@@ -11,14 +11,18 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
+import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -50,6 +54,7 @@ import com.dfuentes.archivo.core.designsystem.component.EmptyState
 import com.dfuentes.archivo.core.designsystem.component.MediaTypeChip
 import com.dfuentes.archivo.core.designsystem.component.RatingStars
 import com.dfuentes.archivo.core.designsystem.theme.ArchivoTheme
+import com.dfuentes.archivo.core.model.LibraryLayout
 import com.dfuentes.archivo.core.model.MediaType
 import com.dfuentes.archivo.core.model.SortOrder
 import com.dfuentes.archivo.core.model.Status
@@ -95,9 +100,23 @@ fun LibraryScreen(
             TopAppBar(
                 title = { Text("Biblioteca") },
                 actions = {
+                    IconButton(onClick = { onAction(LibraryAction.LayoutToggled) }) {
+                        Icon(
+                            imageVector = if (state.layout == LibraryLayout.GRID) {
+                                Icons.AutoMirrored.Filled.ViewList
+                            } else {
+                                Icons.Filled.GridView
+                            },
+                            contentDescription = if (state.layout == LibraryLayout.GRID) {
+                                "Ver como lista"
+                            } else {
+                                "Ver como rejilla"
+                            },
+                        )
+                    }
                     Box {
                         IconButton(onClick = { showSortMenu = true }) {
-                            Icon(Icons.Filled.Sort, contentDescription = "Ordenar")
+                            Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Ordenar")
                         }
                         DropdownMenu(
                             expanded = showSortMenu,
@@ -148,7 +167,10 @@ fun LibraryScreen(
                     onAction = { showAddSheet = true },
                 )
 
-                else -> WorkGrid(items = state.items, onOpenWork = onOpenWork)
+                state.layout == LibraryLayout.GRID ->
+                    WorkGrid(items = state.items, onOpenWork = onOpenWork)
+
+                else -> WorkList(items = state.items, onOpenWork = onOpenWork)
             }
         }
     }
@@ -214,6 +236,51 @@ private fun WorkGrid(
 }
 
 @Composable
+private fun WorkList(
+    items: List<WorkSummary>,
+    onOpenWork: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyColumn(modifier = modifier.fillMaxSize()) {
+        items(items = items, key = { it.id }) { item ->
+            ListItem(
+                headlineContent = { Text(item.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                supportingContent = {
+                    val subtitle = listOfNotNull(item.creators, item.year?.toString())
+                        .joinToString(" · ")
+                    if (subtitle.isNotEmpty()) {
+                        Text(subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                },
+                leadingContent = {
+                    Box(
+                        modifier = Modifier
+                            .width(36.dp)
+                            .aspectRatio(2f / 3f)
+                            .clip(MaterialTheme.shapes.small)
+                            .background(
+                                item.dominantColor?.let { Color(it) }
+                                    ?: MaterialTheme.colorScheme.surfaceVariant,
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = item.title.take(1).uppercase(),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
+                trailingContent = {
+                    item.rating?.let { RatingStars(rating = it, starSize = 12.dp) }
+                },
+                modifier = Modifier.clickable { onOpenWork(item.id) },
+            )
+        }
+    }
+}
+
+@Composable
 private fun WorkCardItem(
     item: WorkSummary,
     onClick: () -> Unit,
@@ -271,6 +338,26 @@ private fun LibraryEmptyPreview() {
     ArchivoTheme {
         LibraryScreen(
             state = LibraryUiState(isLoading = false),
+            onAction = {}, onOpenWork = {}, onAddWork = {},
+        )
+    }
+}
+
+@Preview(name = "Lista", showBackground = true)
+@Composable
+private fun LibraryListPreview() {
+    ArchivoTheme {
+        LibraryScreen(
+            state = LibraryUiState(
+                isLoading = false,
+                layout = LibraryLayout.LIST,
+                items = listOf(
+                    WorkSummary(1, MediaType.BOOK, "El nombre del viento", 2007, null, null,
+                        "Patrick Rothfuss", Status.FINISHED, 9, null),
+                    WorkSummary(2, MediaType.MOVIE, "La llegada", 2016, null, null,
+                        "Denis Villeneuve", Status.FINISHED, 8, null),
+                ),
+            ),
             onAction = {}, onOpenWork = {}, onAddWork = {},
         )
     }
