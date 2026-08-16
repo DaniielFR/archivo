@@ -9,7 +9,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
@@ -85,8 +84,8 @@ fun ArchivoApp(modifier: Modifier = Modifier) {
                 entryProvider = entryProvider {
                     entry<LibraryKey> {
                         LibraryRoute(
-                            onOpenWork = dropUnlessResumed { id -> backStack.add(DetailKey(id)) },
-                            onAddWork = dropUnlessResumed { type -> backStack.add(AddEditKey(type)) },
+                            onOpenWork = { id -> backStack.add(DetailKey(id)) },
+                            onAddWork = { type -> backStack.add(AddEditKey(type)) },
                         )
                     }
                     entry<StatsKey> { StatsRoute() }
@@ -95,7 +94,7 @@ fun ArchivoApp(modifier: Modifier = Modifier) {
                         DetailRoute(
                             workId = key.workId,
                             onBack = { backStack.removeLastOrNull() },
-                            onEdit = dropUnlessResumed { type ->
+                            onEdit = { type ->
                                 backStack.add(AddEditKey(type, key.workId))
                             },
                         )

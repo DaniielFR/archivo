@@ -89,6 +89,7 @@ class LibraryRepositoryImpl @Inject constructor(
             workDao.clearPeople(work.id)
             linkCreators(work.id, work)
             work.currentEntry?.let { entryDao.update(it.toEntity(now)) }
+            Unit  // el bloque debe devolver Unit, no Unit? (el ?.let de arriba)
         }
     }
 
