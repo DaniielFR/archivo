@@ -1,13 +1,11 @@
 package com.dfuentes.archivo.feature.library
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -43,13 +41,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dfuentes.archivo.core.designsystem.component.CoverImage
 import com.dfuentes.archivo.core.designsystem.component.EmptyState
 import com.dfuentes.archivo.core.designsystem.component.MediaTypeChip
 import com.dfuentes.archivo.core.designsystem.component.RatingStars
@@ -253,23 +250,14 @@ private fun WorkList(
                     }
                 },
                 leadingContent = {
-                    Box(
-                        modifier = Modifier
-                            .width(36.dp)
-                            .aspectRatio(2f / 3f)
-                            .clip(MaterialTheme.shapes.small)
-                            .background(
-                                item.dominantColor?.let { Color(it) }
-                                    ?: MaterialTheme.colorScheme.surfaceVariant,
-                            ),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = item.title.take(1).uppercase(),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    CoverImage(
+                        path = item.coverPath,
+                        title = item.title,
+                        dominantColor = item.dominantColor,
+                        shape = MaterialTheme.shapes.small,
+                        initialStyle = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.width(36.dp),
+                    )
                 },
                 trailingContent = {
                     item.rating?.let { RatingStars(rating = it, starSize = 12.dp) }
@@ -290,24 +278,12 @@ private fun WorkCardItem(
         // 2:3 es la proporción real tanto de las portadas de libro como de los
         // pósters de cine, así que la rejilla queda alineada sin recortar nada.
         // Cuando entren las portadas reales (fase 3), ContentScale.Crop aquí.
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(2f / 3f)
-                .clip(MaterialTheme.shapes.medium)
-                .background(
-                    item.dominantColor
-                        ?.let { Color(it) }
-                        ?: MaterialTheme.colorScheme.surfaceVariant,
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = item.title.take(1).uppercase(),
-                style = MaterialTheme.typography.displaySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        CoverImage(
+            path = item.coverPath,
+            title = item.title,
+            dominantColor = item.dominantColor,
+            modifier = Modifier.fillMaxWidth(),
+        )
         Text(
             text = item.title,
             style = MaterialTheme.typography.titleSmall,

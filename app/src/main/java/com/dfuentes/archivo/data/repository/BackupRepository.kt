@@ -11,6 +11,7 @@ import com.dfuentes.archivo.core.backup.BackupManifest
 import com.dfuentes.archivo.core.backup.BackupPreview
 import com.dfuentes.archivo.core.backup.BackupResult
 import com.dfuentes.archivo.core.backup.BackupWork
+import com.dfuentes.archivo.core.backup.COVERS_DIR
 import com.dfuentes.archivo.core.backup.CSV_ENTRY
 import com.dfuentes.archivo.core.backup.DATA_ENTRY
 import com.dfuentes.archivo.core.backup.ImportMode
@@ -22,6 +23,7 @@ import com.dfuentes.archivo.core.backup.toBackup
 import com.dfuentes.archivo.core.backup.toEntity
 import com.dfuentes.archivo.core.database.ArchivoDatabase
 import com.dfuentes.archivo.core.database.dao.BackupDao
+import com.dfuentes.archivo.core.database.dao.WorkDao
 import com.dfuentes.archivo.core.database.entity.GenreEntity
 import com.dfuentes.archivo.core.database.entity.PersonEntity
 import com.dfuentes.archivo.core.database.entity.TagEntity
@@ -29,6 +31,7 @@ import com.dfuentes.archivo.core.database.entity.WorkGenreCrossRef
 import com.dfuentes.archivo.core.database.entity.WorkPersonCrossRef
 import com.dfuentes.archivo.core.database.entity.WorkTagCrossRef
 import com.dfuentes.archivo.core.di.IoDispatcher
+import com.dfuentes.archivo.core.files.CoverStore
 import com.dfuentes.archivo.core.util.sortTitleOf
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
@@ -56,6 +59,8 @@ class BackupRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val db: ArchivoDatabase,
     private val dao: BackupDao,
+    private val coverStore: CoverStore,
+    private val workDao: WorkDao,
     @param:IoDispatcher private val io: CoroutineDispatcher,
 ) {
 
@@ -123,7 +128,14 @@ class BackupRepository @Inject constructor(
             zip.write(buildCsv(data).toByteArray())
             zip.closeEntry()
 
-            // Fase 3: aquí entran las portadas de filesDir/covers.
+            // Portadas: se guardan con su ruta relativa original. Al importar los
+            // ids cambian, así que esa ruta es solo una CLAVE de emparejamiento
+            // con `BackupWork.coverFile`, no un destino.
+            coverStore.allFiles().forEach { file ->
+                zip.putNextEntry(ZipEntry("$COVERS_DIR${file.name}"))
+                file.inputStream().use { it.copyTo(zip) }
+                zip.closeEntry()
+            }
         }
     }
 
@@ -178,6 +190,7 @@ class BackupRepository @Inject constructor(
             }
 
             var imported = 0
+            val coverByEntry = mutableMapOf<String, Long>()
             // Una sola transacción: si algo falla a mitad, la base queda exactamente
             // como estaba. Importar a medias es peor que no importar.
             db.withTransaction {
@@ -193,16 +206,43 @@ class BackupRepository @Inject constructor(
                 data.works.forEach { work ->
                     val fingerprint = work.fingerprint()
                     if (mode == ImportMode.MERGE && fingerprint in existing) return@forEach
-                    insertWork(work, now)
+                    val newId = insertWork(work, now)
+                    work.coverFile?.let { coverByEntry[it] = newId }
                     existing += fingerprint
                     imported++
                 }
             }
+            // Segunda pasada, fuera de la transacción: las portadas se copian en
+            // streaming en vez de cargarse todas en memoria. Una biblioteca grande
+            // son decenas de MB de imágenes y no caben en un ByteArray por las buenas.
+            if (coverByEntry.isNotEmpty()) restoreCovers(source, coverByEntry)
             BackupResult.Success(fileName = "", works = imported)
         }.getOrElse { BackupResult.Failure(it.message ?: "Error desconocido al importar") }
     }
 
-    private suspend fun insertWork(work: BackupWork, now: Long) {
+    /**
+     * Restaura las portadas emparejando la ruta original guardada en el ZIP con
+     * el id nuevo que le tocó a cada obra al insertarse.
+     */
+    private suspend fun restoreCovers(source: Uri, coverByEntry: Map<String, Long>) {
+        context.contentResolver.openInputStream(source)?.use { input ->
+            ZipInputStream(input.buffered()).use { zip ->
+                var entry: ZipEntry? = zip.nextEntry
+                while (entry != null) {
+                    val workId = coverByEntry[entry.name]
+                    if (workId != null) {
+                        coverStore.writeRaw("$workId.jpg", zip.readBytes())?.let { path ->
+                            workDao.updateCover(workId, path, null, System.currentTimeMillis())
+                        }
+                    }
+                    zip.closeEntry()
+                    entry = zip.nextEntry
+                }
+            }
+        }
+    }
+
+    private suspend fun insertWork(work: BackupWork, now: Long): Long {
         val entity = work.toEntity(now, sortTitleOf(work.title))
         val workId = dao.insertWork(entity)
 
@@ -230,6 +270,7 @@ class BackupRepository @Inject constructor(
                 ?: dao.findGenre(name)?.id ?: return@forEach
             dao.linkGenres(listOf(WorkGenreCrossRef(workId, genreId)))
         }
+        return workId
     }
 
     companion object {

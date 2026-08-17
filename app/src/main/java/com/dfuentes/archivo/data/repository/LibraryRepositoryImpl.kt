@@ -5,9 +5,13 @@ import com.dfuentes.archivo.core.database.ArchivoDatabase
 import com.dfuentes.archivo.core.database.dao.EntryDao
 import com.dfuentes.archivo.core.database.dao.LibraryDao
 import com.dfuentes.archivo.core.database.dao.WorkDao
+import com.dfuentes.archivo.core.database.entity.GenreEntity
 import com.dfuentes.archivo.core.database.entity.PersonEntity
+import com.dfuentes.archivo.core.database.entity.WorkGenreCrossRef
 import com.dfuentes.archivo.core.database.entity.WorkPersonCrossRef
+import com.dfuentes.archivo.core.di.ApplicationScope
 import com.dfuentes.archivo.core.di.IoDispatcher
+import com.dfuentes.archivo.core.files.CoverStore
 import com.dfuentes.archivo.core.model.Entry
 import com.dfuentes.archivo.core.model.LibraryFilter
 import com.dfuentes.archivo.core.model.PersonRole
@@ -18,10 +22,12 @@ import com.dfuentes.archivo.data.mapper.toDomain
 import com.dfuentes.archivo.data.mapper.toEntity
 import com.dfuentes.archivo.data.mapper.toSummary
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -32,6 +38,8 @@ class LibraryRepositoryImpl @Inject constructor(
     private val libraryDao: LibraryDao,
     private val workDao: WorkDao,
     private val entryDao: EntryDao,
+    private val coverStore: CoverStore,
+    @param:ApplicationScope private val appScope: CoroutineScope,
     @param:IoDispatcher private val io: CoroutineDispatcher,
 ) : LibraryRepository {
 
@@ -61,13 +69,46 @@ class LibraryRepositoryImpl @Inject constructor(
      * la UI observa Room y pintaría una tarjeta a medias.
      */
     override suspend fun addWork(work: Work): Long = withContext(io) {
-        db.withTransaction {
+        val workId = db.withTransaction {
             val now = System.currentTimeMillis()
-            val workId = workDao.insert(work.toEntity(now))
-            linkCreators(workId, work)
-            val entry = work.currentEntry ?: Entry(workId = workId, status = Status.PENDING)
-            entryDao.insert(entry.copy(workId = workId).toEntity(now))
-            workId
+            val id = workDao.insert(work.toEntity(now))
+            linkCreators(id, work)
+            linkGenres(id, work)
+            val entry = work.currentEntry ?: Entry(workId = id, status = Status.PENDING)
+            entryDao.insert(entry.copy(workId = id).toEntity(now))
+            id
+        }
+        // Fuera de la transacción y sin await: la red no debe retrasar el guardado.
+        fetchCover(workId, work.coverUrl)
+        workId
+    }
+
+    /**
+     * Descarga en el scope de aplicación, no en el del ViewModel: el usuario
+     * cierra la hoja de alta justo después de guardar, y con un scope de
+     * pantalla la descarga moriría exactamente ahí.
+     */
+    private fun fetchCover(workId: Long, url: String?) {
+        if (url.isNullOrBlank()) return
+        appScope.launch {
+            coverStore.download(url, workId)?.let { stored ->
+                workDao.updateCover(
+                    id = workId,
+                    path = stored.relativePath,
+                    color = stored.dominantColor,
+                    now = System.currentTimeMillis(),
+                )
+            }
+        }
+    }
+
+    private suspend fun linkGenres(workId: Long, work: Work) {
+        work.genres.map(String::trim).filter(String::isNotEmpty).distinct().forEach { name ->
+            val genreId = workDao.findGenre(name)?.id
+                ?: workDao.insertGenre(GenreEntity(name = name)).takeIf { it > 0 }
+                ?: workDao.findGenre(name)?.id
+                ?: return@forEach
+            workDao.linkGenre(WorkGenreCrossRef(workId, genreId))
         }
     }
 
@@ -135,6 +176,8 @@ class LibraryRepositoryImpl @Inject constructor(
     override suspend fun deleteWork(id: Long): Work? = withContext(io) {
         val snapshot = getWork(id) ?: return@withContext null
         workDao.findById(id)?.let { workDao.delete(it) }
+        // La portada NO se borra aquí: si el usuario pulsa Deshacer la queremos
+        // de vuelta sin volver a bajarla. Se limpia en restore() si no vuelve.
         snapshot
     }
 

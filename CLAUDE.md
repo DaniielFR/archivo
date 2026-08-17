@@ -8,7 +8,7 @@ Los ajustes de versiones hechos al montar el proyecto, en `CAMBIOS-SETUP.md`.
 
 ## Estado
 
-Fases 0, 1 y 2 completadas. **Siguiente: fase 3 — metadatos de libros.**
+Fases 0–3 completadas. **Siguiente: fase 4 — cine y series (TMDB).**
 
 Ya hay copias de seguridad: puedes meter tus datos de verdad.
 
@@ -29,6 +29,7 @@ source ~/.archivo-env.sh
 
 Kotlin 2.3.20 · Compose (BOM 2026.08.00) · Room 2.8.4 · Hilt 2.60.1 · KSP 2.3.11
 Navigation 3 1.1.6 · DataStore · WorkManager 2.11.0
+Retrofit 3 · OkHttp 5 · Coil 3 · Palette
 `compileSdk 37` · `targetSdk 36` · `minSdk 31`
 
 Trampas de versiones ya resueltas, **no las reintroduzcas**:
@@ -125,10 +126,28 @@ cortesía para hojas de cálculo.
 - `AutoBackupWorker` escribe en el árbol SAF que el usuario concedió una vez.
   Sin `takePersistableUriPermission` el permiso muere al reiniciar.
 
-## Deuda conocida (fase 3+)
+## Red y metadatos (fase 3)
 
-- La búsqueda es `LIKE` provisional; FTS4 llega en la fase 5.
+**La red nunca alimenta la UI directamente.** Se busca → se guarda en Room → la
+UI observa Room. Una obra guardada no vuelve a necesitar internet jamás.
+
+- Dos fuentes en paralelo: Google Books (manda, mejor catálogo en español) y
+  Open Library (rellena páginas, editorial y portada). Se fusionan por ISBN.
+- La portada se descarga en `@ApplicationScope`, **no** en el del ViewModel: el
+  usuario cierra la hoja justo después de guardar y ahí moriría la descarga.
+- Guardar nunca espera a la red. La portada aparece sola cuando llega.
+- `CoverStore` reescala a 600 px y extrae el color dominante con Palette.
+  Decodifica en dos pasadas (`inSampleSize`) para no reventar la memoria.
+- Open Library exige `User-Agent` identificado (1 → 3 req/s) y que se pidan solo
+  los campos necesarios. Ambas cosas están puestas; no las quites.
+- La clave de Google Books es **opcional** y vive en DataStore, no en el APK.
+
+## Deuda conocida (fase 4+)
+
+- La búsqueda local es `LIKE` provisional; FTS4 llega en la fase 5.
 - No hay pantalla de progreso (página / SxxEyy) todavía.
-- El backup aún no incluye portadas (no existen hasta la fase 3).
+- Películas y series siguen entrando por formulario manual (fase 4: TMDB).
+- Al borrar una obra no se borra su portada de `filesDir` (a propósito, para que
+  Deshacer no tenga que volver a bajarla), pero **falta la limpieza diferida**.
 - `MigrationTest` es solo andamiaje: al crear la versión 2 hay que escribir el
   test real **en el mismo commit**.

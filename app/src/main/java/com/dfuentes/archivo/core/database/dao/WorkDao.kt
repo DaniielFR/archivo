@@ -38,6 +38,14 @@ interface WorkDao {
     @Query("SELECT * FROM work WHERE isbn13 = :isbn13 LIMIT 1")
     suspend fun findByIsbn(isbn13: String): WorkEntity?
 
+    /**
+     * Actualización puntual de la portada. Se hace con un UPDATE dirigido y no
+     * con `update(entity)` porque la descarga termina en segundo plano: reescribir
+     * la fila entera pisaría cualquier edición que el usuario haya hecho mientras.
+     */
+    @Query("UPDATE work SET cover_path = :path, dominant_color = :color, updated_at = :now WHERE id = :id")
+    suspend fun updateCover(id: Long, path: String?, color: Int?, now: Long)
+
     // ── Personas ──
     @Query("SELECT * FROM person WHERE name = :name LIMIT 1")
     suspend fun findPerson(name: String): PersonEntity?
