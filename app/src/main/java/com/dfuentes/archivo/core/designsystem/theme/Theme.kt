@@ -8,8 +8,12 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
-/** Preferencia de tema del usuario. Se persistirá en DataStore (fase 1). */
-enum class ThemeMode { SYSTEM, LIGHT, DARK }
+/** Preferencia de tema del usuario. Persistida en DataStore. */
+enum class ThemeMode(val displayName: String) {
+    SYSTEM("Sistema"),
+    LIGHT("Claro"),
+    DARK("Oscuro"),
+}
 
 @Composable
 fun ArchivoTheme(

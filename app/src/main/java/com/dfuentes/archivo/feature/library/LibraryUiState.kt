@@ -36,8 +36,4 @@ sealed interface LibraryAction {
     data object FiltersCleared : LibraryAction
 
     data object LayoutToggled : LibraryAction
-
-    /** TEMPORAL (fase 0): valida el ciclo escritura → Room → Flow → UI.
-     *  Se elimina en la fase 1, cuando exista el alta manual de verdad. */
-    data object SampleDataRequested : LibraryAction
 }
