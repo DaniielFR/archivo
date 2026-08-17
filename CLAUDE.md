@@ -8,9 +8,9 @@ Los ajustes de versiones hechos al montar el proyecto, en `CAMBIOS-SETUP.md`.
 
 ## Estado
 
-Fases 0 y 1 completadas. **Siguiente: fase 2 — copias de seguridad.**
+Fases 0, 1 y 2 completadas. **Siguiente: fase 3 — metadatos de libros.**
 
-⚠️ No metas datos que te dolería perder hasta que la fase 2 esté hecha.
+Ya hay copias de seguridad: puedes meter tus datos de verdad.
 
 ## Entorno
 
@@ -28,7 +28,7 @@ source ~/.archivo-env.sh
 ## Stack
 
 Kotlin 2.3.20 · Compose (BOM 2026.08.00) · Room 2.8.4 · Hilt 2.60.1 · KSP 2.3.11
-Navigation 3 1.1.6 · DataStore
+Navigation 3 1.1.6 · DataStore · WorkManager 2.11.0
 `compileSdk 37` · `targetSdk 36` · `minSdk 31`
 
 Trampas de versiones ya resueltas, **no las reintroduzcas**:
@@ -106,11 +106,29 @@ Los ViewModels con argumento usan **inyección asistida**:
 Es obligatorio incluir `rememberViewModelStoreNavEntryDecorator()` en
 `entryDecorators` o cada recomposición crearía un ViewModel nuevo.
 
-## Deuda conocida (fase 2+)
+## Copias de seguridad
 
-- Warnings pendientes: `!!` innecesarios en `RatingStars.kt`, icono `StarHalf`
-  deprecado, target de anotación en `LibraryRepositoryImpl`.
+Formato `.archivo` = ZIP con `manifest.json` + `data.json` + `data.csv`
+(+ `covers/` desde la fase 3). El JSON es el formato canónico; el CSV es
+cortesía para hojas de cálculo.
+
+- `FORMAT_VERSION` es **independiente** de la versión del esquema de Room.
+  Cualquier lector debe mirar ese número, no el de Room.
+- Las obras se exportan **anidadas** (registros, autores, etiquetas y géneros
+  dentro de cada obra): al importar los ids cambian, y anidando no hace falta
+  mapa de traducción de claves foráneas.
+- La importación es **transaccional**: o entra todo o no entra nada.
+- Deduplicación por huella (`fingerprintOf`): fuente+id > ISBN > tipo/título/año.
+  La expresión SQL de `BackupDao.fingerprints()` **debe** coincidir con ella.
+- Un enum desconocido cae a un valor de reserva en vez de abortar: perder el
+  formato de un libro es molesto, perder los otros 300 es inaceptable.
+- `AutoBackupWorker` escribe en el árbol SAF que el usuario concedió una vez.
+  Sin `takePersistableUriPermission` el permiso muere al reiniciar.
+
+## Deuda conocida (fase 3+)
+
 - La búsqueda es `LIKE` provisional; FTS4 llega en la fase 5.
-- `LibraryLayout.LIST` se persiste pero la rejilla aún no lo respeta.
-- Las notas se guardan en cada pulsación: falta un debounce (~400 ms).
 - No hay pantalla de progreso (página / SxxEyy) todavía.
+- El backup aún no incluye portadas (no existen hasta la fase 3).
+- `MigrationTest` es solo andamiaje: al crear la versión 2 hay que escribir el
+  test real **en el mismo commit**.

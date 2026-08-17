@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.StarHalf
+import androidx.compose.material.icons.automirrored.filled.StarHalf
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -58,7 +58,9 @@ fun RatingStars(
         return raw
     }
 
-    val interactive = onRatingChange != null
+    // Se captura en un local: el smart cast no cruza la frontera de la lambda,
+    // y esto evita los !! que ensuciaban el fichero.
+    val onChange = onRatingChange
     val description = if (rating == null) {
         "Sin puntuar"
     } else {
@@ -70,17 +72,17 @@ fun RatingStars(
         modifier = modifier
             .height(48.dp) // objetivo táctil mínimo, aunque los iconos midan menos
             .then(
-                if (!interactive) Modifier else Modifier.pointerInput(Unit) {
+                if (onChange == null) Modifier else Modifier.pointerInput(Unit) {
                     widthPx = size.width.toFloat()
                     detectTapGestures { offset ->
                         val next = ratingFromX(offset.x)
                         haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        onRatingChange!!(next)
+                        onChange(next)
                     }
                 },
             )
             .then(
-                if (!interactive) Modifier else Modifier.pointerInput(Unit) {
+                if (onChange == null) Modifier else Modifier.pointerInput(Unit) {
                     widthPx = size.width.toFloat()
                     var last = current
                     detectHorizontalDragGestures { change, _ ->
@@ -88,7 +90,7 @@ fun RatingStars(
                         if (next != last) {
                             last = next
                             haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            onRatingChange!!(next)
+                            onChange(next)
                         }
                     }
                 },
@@ -99,7 +101,7 @@ fun RatingStars(
             val halvesForThisStar = current - index * 2
             val icon = when {
                 halvesForThisStar >= 2 -> Icons.Filled.Star
-                halvesForThisStar == 1 -> Icons.Filled.StarHalf
+                halvesForThisStar == 1 -> Icons.AutoMirrored.Filled.StarHalf
                 else -> Icons.Outlined.StarOutline
             }
             Icon(

@@ -8,7 +8,9 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +25,7 @@ import kotlinx.coroutines.launch
  * desde un SavedStateHandle. Es el patrón oficial de Hilt con Navigation 3 y
  * hace que el ViewModel no pueda existir sin su argumento.
  */
+@OptIn(FlowPreview::class)
 @HiltViewModel(assistedFactory = DetailViewModel.Factory::class)
 class DetailViewModel @AssistedInject constructor(
     @Assisted private val workId: Long,
@@ -36,6 +39,23 @@ class DetailViewModel @AssistedInject constructor(
 
     private val deleted = MutableStateFlow(false)
     private var lastDeleted: Work? = null
+
+    /**
+     * Las notas no se escriben en cada pulsación: se espera a que dejes de
+     * teclear. Sin esto, una nota de 200 caracteres son 200 transacciones y
+     * 200 emisiones del Flow que repintan la pantalla mientras escribes.
+     */
+    private val notesInput = MutableSharedFlow<String>(extraBufferCapacity = 64)
+
+    init {
+        viewModelScope.launch {
+            notesInput.debounce(NOTES_DEBOUNCE_MS).collect { text ->
+                uiState.value.work?.currentEntry?.let {
+                    repository.upsertEntry(it.copy(notes = text.ifBlank { null }))
+                }
+            }
+        }
+    }
 
     private val _events = MutableSharedFlow<DetailEvent>()
     val events = _events.asSharedFlow()
@@ -65,7 +85,9 @@ class DetailViewModel @AssistedInject constructor(
                 repository.setRating(workId, if (current == action.rating) null else action.rating)
             }
 
-            is DetailAction.NotesChanged -> updateEntry { it.copy(notes = action.notes.ifBlank { null }) }
+            is DetailAction.NotesChanged -> {
+                notesInput.tryEmit(action.notes)
+            }
 
             is DetailAction.StartedOnChanged -> updateEntry { it.copy(startedOn = action.epochDay) }
 
@@ -101,3 +123,5 @@ class DetailViewModel @AssistedInject constructor(
 sealed interface DetailEvent {
     data object Deleted : DetailEvent
 }
+
+private const val NOTES_DEBOUNCE_MS = 400L

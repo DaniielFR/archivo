@@ -2,10 +2,25 @@ package com.dfuentes.archivo
 
 import android.app.Application
 import android.os.StrictMode
+import androidx.hilt.work.HiltWorkerFactory
+import androidx.work.Configuration
 import dagger.hilt.android.HiltAndroidApp
+import javax.inject.Inject
 
 @HiltAndroidApp
-class ArchivoApplication : Application() {
+class ArchivoApplication : Application(), Configuration.Provider {
+
+    @Inject lateinit var workerFactory: HiltWorkerFactory
+
+    /**
+     * WorkManager se inicializa por Hilt, no por su inicializador automático
+     * (ver el `provider` con tools:node="remove" del manifiesto). Sin esto,
+     * AutoBackupWorker no podría recibir sus dependencias inyectadas.
+     */
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
+            .setWorkerFactory(workerFactory)
+            .build()
 
     override fun onCreate() {
         super.onCreate()
