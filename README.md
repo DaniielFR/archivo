@@ -6,7 +6,7 @@ copias de seguridad que exportas tú.
 
 ## Estado
 
-**Fase 2 — blindaje de datos.** Ver `GUIA-FASE-0.md` para arrancar y
+**Fase 3 — metadatos de libros.** Ver `GUIA-FASE-0.md` para arrancar y
 `informe-tecnico.md` para el diseño completo y el plan por fases.
 
 | Fase | Contenido | Estado |
@@ -14,7 +14,7 @@ copias de seguridad que exportas tú.
 | 0 | Proyecto, tema, Room, navegación, CI | ✅ |
 | 1 | MVP: alta manual, biblioteca, ficha de detalle | ✅ |
 | 2 | Exportación/importación y copia automática | ✅ |
-| 3 | Metadatos de libros (Google Books + Open Library) | ⬜ |
+| 3 | Metadatos de libros (Google Books + Open Library) | ✅ |
 | 4 | Cine y series (TMDB) | ⬜ |
 | 5 | Búsqueda FTS, etiquetas, estadísticas | ⬜ |
 | 6 | Acabado: transiciones, escáner ISBN, widget, tests visuales | ⬜ |

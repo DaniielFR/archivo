@@ -17,7 +17,9 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.dfuentes.archivo.feature.addedit.AddEditRoute
 import com.dfuentes.archivo.feature.detail.DetailRoute
+import com.dfuentes.archivo.core.model.MediaType
 import com.dfuentes.archivo.feature.library.LibraryRoute
+import com.dfuentes.archivo.feature.search.SearchRoute
 import com.dfuentes.archivo.feature.settings.SettingsRoute
 import com.dfuentes.archivo.feature.stats.StatsRoute
 
@@ -85,7 +87,13 @@ fun ArchivoApp(modifier: Modifier = Modifier) {
                     entry<LibraryKey> {
                         LibraryRoute(
                             onOpenWork = { id -> backStack.add(DetailKey(id)) },
-                            onAddWork = { type -> backStack.add(AddEditKey(type)) },
+                            // Los libros entran por búsqueda asistida; el resto,
+                            // por formulario manual hasta la fase 4.
+                            onAddWork = { type ->
+                                backStack.add(
+                                    if (type == MediaType.BOOK) SearchKey(type) else AddEditKey(type),
+                                )
+                            },
                         )
                     }
                     entry<StatsKey> { StatsRoute() }
@@ -96,6 +104,17 @@ fun ArchivoApp(modifier: Modifier = Modifier) {
                             onBack = { backStack.removeLastOrNull() },
                             onEdit = { type ->
                                 backStack.add(AddEditKey(type, key.workId))
+                            },
+                        )
+                    }
+                    entry<SearchKey> { key ->
+                        SearchRoute(
+                            onClose = { backStack.removeLastOrNull() },
+                            onManualEntry = {
+                                // Reemplaza la búsqueda en la pila: al volver del
+                                // formulario no queremos reaparecer en el buscador.
+                                backStack.removeLastOrNull()
+                                backStack.add(AddEditKey(key.type))
                             },
                         )
                     }

@@ -24,3 +24,7 @@ data class DetailKey(val workId: Long) : NavKey
 /** [workId] null ⇒ alta nueva; con valor ⇒ edición de una obra existente. */
 @Serializable
 data class AddEditKey(val type: MediaType, val workId: Long? = null) : NavKey
+
+/** Búsqueda asistida en catálogos externos. Fase 4: también películas y series. */
+@Serializable
+data class SearchKey(val type: MediaType) : NavKey

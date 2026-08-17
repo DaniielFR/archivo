@@ -24,7 +24,13 @@ interface LibraryRepository {
 
     suspend fun getWork(id: Long): Work?
 
-    /** Alta: inserta la obra, sus autores y su primer registro. Devuelve el id. */
+    /**
+     * Alta: inserta la obra, sus autores y su primer registro. Devuelve el id.
+     *
+     * Si la obra trae `coverUrl`, la descarga se lanza en segundo plano y esta
+     * función NO la espera: guardar debe ser instantáneo aunque estés sin
+     * cobertura. La portada aparece sola cuando llega.
+     */
     suspend fun addWork(work: Work): Long
 
     /** Edición: actualiza obra, autores y el registro vigente. */

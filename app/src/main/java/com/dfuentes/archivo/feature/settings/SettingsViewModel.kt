@@ -101,6 +101,10 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun setGoogleBooksKey(key: String) {
+        viewModelScope.launch { settings.setGoogleBooksKey(key) }
+    }
+
     fun setAutoBackup(enabled: Boolean) {
         viewModelScope.launch {
             settings.setAutoBackup(enabled)

@@ -1,12 +1,10 @@
 package com.dfuentes.archivo.feature.detail
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -42,13 +40,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dfuentes.archivo.core.designsystem.component.CoverImage
 import com.dfuentes.archivo.core.designsystem.component.DateField
 import com.dfuentes.archivo.core.designsystem.component.RatingStars
 import com.dfuentes.archivo.core.designsystem.theme.ArchivoTheme
@@ -161,23 +158,12 @@ private fun DetailContent(
     Column(modifier = modifier.padding(horizontal = 20.dp)) {
         // ── Cabecera: portada + datos objetivos ──
         Row {
-            Box(
-                modifier = Modifier
-                    .width(120.dp)
-                    .aspectRatio(2f / 3f)
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(
-                        work.dominantColor?.let { Color(it) }
-                            ?: MaterialTheme.colorScheme.surfaceVariant,
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = work.title.take(1).uppercase(),
-                    style = MaterialTheme.typography.displaySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            CoverImage(
+                path = work.coverPath,
+                title = work.title,
+                dominantColor = work.dominantColor,
+                modifier = Modifier.width(120.dp),
+            )
             Column(modifier = Modifier.padding(start = 16.dp)) {
                 Text(work.title, style = MaterialTheme.typography.headlineSmall)
                 if (work.creators.isNotEmpty()) {

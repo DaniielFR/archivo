@@ -2,6 +2,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!--
+      Único permiso de la app, y solo para consultar catálogos de metadatos.
+      No hay analytics, ni crash reporting remoto, ni nada que envíe tus datos
+      fuera del dispositivo. Las portadas se copian a almacenamiento interno
+      para que la app siga funcionando aunque esas APIs desaparezcan.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <application
         android:name=".ArchivoApplication"
         android:allowBackup="true"

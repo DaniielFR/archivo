@@ -29,6 +29,8 @@ data class UserPreferences(
     /** URI de árbol SAF con permiso persistido. Null = sin carpeta elegida. */
     val backupFolderUri: String? = null,
     val lastBackupAt: Long? = null,
+    /** Opcional: Google Books funciona sin clave con un límite más bajo. */
+    val googleBooksKey: String? = null,
 )
 
 @Singleton
@@ -43,6 +45,7 @@ class SettingsRepository @Inject constructor(
         val AUTO_BACKUP = booleanPreferencesKey("auto_backup")
         val BACKUP_FOLDER = stringPreferencesKey("backup_folder")
         val LAST_BACKUP = longPreferencesKey("last_backup_at")
+        val GOOGLE_BOOKS_KEY = stringPreferencesKey("google_books_key")
     }
 
     val preferences: Flow<UserPreferences> = context.dataStore.data.map { prefs ->
@@ -57,6 +60,7 @@ class SettingsRepository @Inject constructor(
             autoBackupEnabled = prefs[Keys.AUTO_BACKUP] ?: false,
             backupFolderUri = prefs[Keys.BACKUP_FOLDER],
             lastBackupAt = prefs[Keys.LAST_BACKUP],
+            googleBooksKey = prefs[Keys.GOOGLE_BOOKS_KEY],
         )
     }
 
@@ -82,6 +86,13 @@ class SettingsRepository @Inject constructor(
 
     suspend fun setLastBackupAt(millis: Long) {
         context.dataStore.edit { it[Keys.LAST_BACKUP] = millis }
+    }
+
+    suspend fun setGoogleBooksKey(key: String?) {
+        context.dataStore.edit { prefs ->
+            if (key.isNullOrBlank()) prefs.remove(Keys.GOOGLE_BOOKS_KEY)
+            else prefs[Keys.GOOGLE_BOOKS_KEY] = key.trim()
+        }
     }
 
     private suspend fun put(key: Preferences.Key<String>, value: String) {

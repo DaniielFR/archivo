@@ -17,6 +17,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -28,7 +29,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -168,9 +171,23 @@ fun SettingsRoute(
 
             HorizontalDivider()
             SectionHeader("Acerca de")
-            ListItem(
-                headlineContent = { Text("Claves de API") },
-                supportingContent = { Text("Fase 3 · Google Books y TMDB") },
+            var apiKey by remember(prefs.googleBooksKey) {
+                mutableStateOf(prefs.googleBooksKey.orEmpty())
+            }
+            OutlinedTextField(
+                value = apiKey,
+                onValueChange = {
+                    apiKey = it
+                    viewModel.setGoogleBooksKey(it)
+                },
+                label = { Text("Clave de Google Books (opcional)") },
+                supportingText = {
+                    Text("Sin clave funciona igual, con un límite diario más bajo.")
+                },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
             )
             ListItem(
                 headlineContent = { Text("Versión") },

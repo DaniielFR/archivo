@@ -3,14 +3,35 @@ package com.dfuentes.archivo
 import android.app.Application
 import android.os.StrictMode
 import androidx.hilt.work.HiltWorkerFactory
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import coil3.request.crossfade
+import okhttp3.OkHttpClient
 import androidx.work.Configuration
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
 @HiltAndroidApp
-class ArchivoApplication : Application(), Configuration.Provider {
+class ArchivoApplication : Application(), Configuration.Provider, SingletonImageLoader.Factory {
 
     @Inject lateinit var workerFactory: HiltWorkerFactory
+
+    @Inject lateinit var okHttpClient: dagger.Lazy<OkHttpClient>
+
+    /**
+     * Coil reutiliza el OkHttpClient de la app: misma caché de disco, mismos
+     * timeouts y mismo User-Agent. Tener dos pools de conexiones en una app que
+     * hace cuatro peticiones sería desperdicio puro.
+     */
+    override fun newImageLoader(context: PlatformContext): ImageLoader =
+        ImageLoader.Builder(context)
+            .components {
+                add(OkHttpNetworkFetcherFactory(callFactory = { okHttpClient.get() }))
+            }
+            .crossfade(true)
+            .build()
 
     /**
      * WorkManager se inicializa por Hilt, no por su inicializador automático
